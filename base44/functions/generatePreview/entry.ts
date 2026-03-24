@@ -214,3 +214,4 @@ export default async function handler(request) {
 
   return { previews_generados, total_leads: leads?.length || 0 };
 }
+// updated Tue Mar 24 06:35:44 UTC 2026
