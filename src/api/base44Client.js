@@ -4,7 +4,7 @@ import { appParams } from '@/lib/app-params';
 const { token, functionsVersion, appBaseUrl } = appParams;
 
 export const base44 = createClient({
-  appId: "69c0a774c601a0435a0d63d0",
+  appId: "69c22108b8c4a14c87db9aef",
   token,
   functionsVersion,
   requiresAuth: false,
