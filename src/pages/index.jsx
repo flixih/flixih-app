@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Lead } from "../api/entities";
-import { searchLeads, generatePreview } from "../api/backendFunctions";
+import { searchLeads, generatePreview, sendOutreach } from "../api/backendFunctions";
 
 const STATUS_COLORS = {
   no_website: { bg: "#FEF3C7", text: "#92400E", label: "Sin Website" },
@@ -38,6 +38,7 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [searching, setSearching] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [sendingId, setSendingId] = useState(null);
   const [tab, setTab] = useState("leads");
   const [selectedId, setSelectedId] = useState(null);
   const [searchForm, setSearchForm] = useState({
@@ -100,6 +101,24 @@ export default function App() {
       showToast("Error: " + e.message, "error");
     }
     setGenerating(false);
+  };
+
+  const handleSendEmail = async (lead) => {
+    if (!lead.email) { showToast("Este lead no tiene email", "error"); return; }
+    if (!lead.email_asunto || !lead.email_cuerpo) { showToast("Genera el preview primero (necesita email_asunto y email_cuerpo)", "error"); return; }
+    setSendingId(lead.id);
+    try {
+      const res = await sendOutreach({ lead_id: lead.id });
+      if (res.success) {
+        setLeads(prev => prev.map(l => l.id === lead.id ? { ...l, outreach_status: "enviado" } : l));
+        showToast("✅ Email enviado a " + lead.email);
+      } else {
+        showToast("Error: " + (res.error || "No se pudo enviar"), "error");
+      }
+    } catch (e) {
+      showToast("Error: " + e.message, "error");
+    }
+    setSendingId(null);
   };
 
   const handleUpdateLead = async (id, data) => {
@@ -210,7 +229,7 @@ export default function App() {
               <div style={{ marginTop: 22, background: "#F0FDF4", border: "1.5px solid #BBF7D0", borderRadius: 14, padding: 20 }}>
                 <div style={{ fontWeight: 800, color: "#065F46", marginBottom: 14 }}>✅ Búsqueda Completada</div>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px,1fr))", gap: 10 }}>
-                  {[["Encontrados",searchResult.total_encontrados],["Con 5+ Reviews",searchResult.con_5_reviews],["Guardados",searchResult.leads_guardados],["Sin Website",searchResult.sin_website],["Roto",searchResult.website_roto],["Alta Prior.",searchResult.alta_prioridad]].map(([k,v])=>(
+                  {[["Encontrados",searchResult.total_encontrados],["Con 5+ Reviews",searchResult.con_5_reviews],["Guardados",searchResult.leads_guardados],["Sin Website",searchResult.sin_website],["Roto",searchResult.website_roto],["Alta Prior.",searchResult.alta_prioridad]].map(([k,v]) => (
                     <div key={k} style={{ background: "white", borderRadius: 10, padding: "12px 8px", textAlign: "center" }}>
                       <div style={{ fontSize: 24, fontWeight: 800, color: "#0F2540" }}>{v ?? 0}</div>
                       <div style={{ fontSize: 11, color: "#6B7280", marginTop: 3 }}>{k}</div>
@@ -259,9 +278,11 @@ export default function App() {
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 {filteredLeads.map(lead => {
                   const isOpen = selectedId === lead.id;
+                  const isSending = sendingId === lead.id;
                   return (
                     <div key={lead.id} style={{ background: "white", borderRadius: 14, padding: "16px 20px", boxShadow: isOpen ? "0 4px 20px rgba(0,0,0,0.1)" : "0 1px 6px rgba(0,0,0,0.06)", borderLeft: `4px solid ${PRIORITY_COLORS[lead.lead_priority]?.dot || "#CBD5E1"}`, cursor: "pointer" }}
                       onClick={() => setSelectedId(isOpen ? null : lead.id)}>
+
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 8 }}>
                         <div>
                           <div style={{ fontWeight: 800, fontSize: 15, color: "#111" }}>{lead.nombre_negocio || "—"}</div>
@@ -279,6 +300,7 @@ export default function App() {
 
                       {isOpen && (
                         <div style={{ marginTop: 16, borderTop: "1px solid #F3F4F6", paddingTop: 16 }} onClick={e => e.stopPropagation()}>
+
                           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px,1fr))", gap: 14, marginBottom: 14 }}>
                             <div>
                               <div style={{ fontSize: 11, fontWeight: 700, color: "#9CA3AF", textTransform: "uppercase", marginBottom: 4 }}>Teléfono</div>
@@ -306,14 +328,29 @@ export default function App() {
                             </div>
                           </div>
 
+                          {/* Email Draft */}
                           {lead.email_asunto && (
                             <div style={{ background: "#F0F9FF", border: "1.5px solid #BAE6FD", borderRadius: 12, padding: 14, marginBottom: 12 }}>
                               <div style={{ fontSize: 11, fontWeight: 800, color: "#0369A1", textTransform: "uppercase", marginBottom: 6 }}>📧 Email de Outreach</div>
                               <div style={{ fontSize: 13, fontWeight: 700, color: "#1E3A5F", marginBottom: 8 }}>Asunto: {lead.email_asunto}</div>
                               <pre style={{ fontSize: 12, color: "#374151", whiteSpace: "pre-wrap", fontFamily: "inherit", lineHeight: 1.7, margin: 0 }}>{lead.email_cuerpo}</pre>
+
+                              {/* SEND BUTTON */}
+                              {lead.email && lead.outreach_status !== "enviado" && (
+                                <button
+                                  onClick={() => handleSendEmail(lead)}
+                                  disabled={isSending}
+                                  style={{ marginTop: 12, background: isSending ? "#94A3B8" : "linear-gradient(135deg,#0F2540,#1A5276)", color: "white", border: "none", padding: "9px 20px", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: isSending ? "not-allowed" : "pointer" }}>
+                                  {isSending ? "⏳ Enviando..." : "📤 Enviar por Outlook"}
+                                </button>
+                              )}
+                              {lead.outreach_status === "enviado" && (
+                                <div style={{ marginTop: 10, color: "#065F46", fontWeight: 700, fontSize: 13 }}>✅ Email enviado</div>
+                              )}
                             </div>
                           )}
 
+                          {/* Preview Button */}
                           {lead.preview_html && (
                             <button onClick={() => { const w = window.open("","_blank"); if(w){w.document.write(lead.preview_html);w.document.close();} }}
                               style={{ background: "#0F2540", color: "white", border: "none", padding: "8px 18px", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer", marginBottom: 12 }}>
@@ -321,6 +358,7 @@ export default function App() {
                             </button>
                           )}
 
+                          {/* Status Buttons */}
                           <div style={{ marginBottom: 10 }}>
                             <div style={{ fontSize: 11, fontWeight: 700, color: "#9CA3AF", textTransform: "uppercase", marginBottom: 6 }}>Estado Outreach</div>
                             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
@@ -333,6 +371,7 @@ export default function App() {
                             </div>
                           </div>
 
+                          {/* Notes */}
                           <textarea defaultValue={lead.notas || ""} placeholder="Notas internas..."
                             onBlur={async e => {
                               if (e.target.value !== (lead.notas || "")) {
