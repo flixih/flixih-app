@@ -1,39 +1,28 @@
-**Welcome to your Base44 project** 
+# Flixih Lead System
 
-**About**
+Lead generation system for local businesses in Puerto Rico.
+Built by Roy Lorenzo — Websites para PR.
 
-View and Edit  your app on [Base44.com](http://Base44.com) 
+## Setup in base44
 
-This project contains everything you need to run your app locally.
+### 1. Secrets
+Add in base44 → Settings → Secrets:
+- `GOOGLE_PLACES_API_KEY` — your Google Places API key
 
-**Edit the code in your local development environment**
+### 2. Entity
+Create entity `Lead` in base44 → Data with these fields:
+- nombre_negocio, categoria, direccion, telefono (text)
+- rating, reviews (number)
+- website_url, website_status, google_maps_url (text)
+- ubicacion_buscada, lead_priority, outreach_status (text)
+- email, email_status, email_asunto, email_cuerpo (text)
+- preview_html, preview_url, notas (text)
 
-Any change pushed to the repo will also be reflected in the Base44 Builder.
+### 3. Functions
+The 3 backend functions are in `/functions/`:
+- `searchLeads.ts` — Google Maps search + save leads
+- `generatePreview.ts` — HTML website preview generator
+- `sendOutreach.ts` — Send email via Outlook
 
-**Prerequisites:** 
-
-1. Clone the repository using the project's Git URL 
-2. Navigate to the project directory
-3. Install dependencies: `npm install`
-4. Create an `.env.local` file and set the right environment variables
-
-```
-VITE_BASE44_APP_ID=your_app_id
-VITE_BASE44_APP_BASE_URL=your_backend_url
-
-e.g.
-VITE_BASE44_APP_ID=cbef744a8545c389ef439ea6
-VITE_BASE44_APP_BASE_URL=https://my-to-do-list-81bfaad7.base44.app
-```
-
-Run the app: `npm run dev`
-
-**Publish your changes**
-
-Open [Base44.com](http://Base44.com) and click on Publish.
-
-**Docs & Support**
-
-Documentation: [https://docs.base44.com/Integrations/Using-GitHub](https://docs.base44.com/Integrations/Using-GitHub)
-
-Support: [https://app.base44.com/support](https://app.base44.com/support)
+### 4. Publish
+Click Publish in the base44 editor.

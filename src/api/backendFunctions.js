@@ -1,9 +1,9 @@
 import { base44 } from './base44Client';
 
-// invoke() returns raw axios response {data: ...} since interceptResponses=false
-// so we unwrap .data to get the actual payload
-const call = async (name, params) => {
+const call = async (name, params = {}) => {
   const res = await base44.functions.invoke(name, params);
+  // base44 SDK returns raw axios response for functions (interceptResponses=false)
+  // so we need to unwrap .data
   return res?.data ?? res;
 };
 
